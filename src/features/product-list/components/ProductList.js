@@ -201,26 +201,36 @@ function classNames (...classes) {
 export default function ProductList () {
   const dispatch = useDispatch();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [sort, setSort] = useState({});
 
   const products = useSelector(selectAllProducts);
   const [filter, setFilter] = useState({});
 
   const handleFilter = (e, section, option) => {
-    const newFilter = { ...filter, [section.id]: option.value };
+    const newFilter = { ...filter };
+    if (e.target.checked) {
+      if (newFilter[section.id]) {
+        newFilter[section.id].push(option.value)
+      } else {
+        newFilter[section.id] = [option.value]
+      }
+    } else {
+      const index = newFilter[section.id].findIndex(el => el === option.value)
+      newFilter[section.id].splice(index, 1);
+    }
+    console.log({ newFilter });
     setFilter(newFilter);
-    dispatch(fetchProductsByFiltersAsync(newFilter));
-    console.log(section.id, option.value);
   };
 
   const handleSort = (e, option) => {
-    const newFilter = { ...filter, _sort: option.sort, _order: option.order };
-    setFilter(newFilter);
-    dispatch(fetchProductsByFiltersAsync(newFilter));
+    const sort = { _sort: option.sort, _order: option.order };
+    console.log({ sort });
+    setSort(sort);
   };
 
   useEffect(() => {
-    dispatch(fetchAllProductsAsync());
-  }, [dispatch]);
+    dispatch(fetchProductsByFiltersAsync({ filter, sort }));
+  }, [dispatch, filter, sort]);
 
   return (
     <div className="bg-white">
@@ -316,12 +326,10 @@ export default function ProductList () {
           </section>
 
           {/* section of product and filters ends */ }
-          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-            <Pagination></Pagination>
-          </div>
+          <Pagination></Pagination>
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
 
@@ -507,7 +515,8 @@ function DesktopFilter ({ handleFilter }) {
 
 function Pagination () {
   return (
-    <>
+    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+
       <div className="flex flex-1 justify-between sm:hidden">
         <a
           href="#"
@@ -567,7 +576,7 @@ function Pagination () {
           </nav>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
