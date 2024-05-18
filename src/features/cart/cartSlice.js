@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { addToCart, fetchItemsByUserId, deleteItemFromCart, updateCart } from './cartAPI';
+import { addToCart, fetchItemsByUserId, deleteItemFromCart, updateCart, resetCart } from './cartAPI';
 
 const initialState = {
   value: 0,
@@ -42,6 +42,16 @@ export const deleteItemFromCartAsync = createAsyncThunk(
   }
 );
 
+export const resetCartAsync = createAsyncThunk(
+  'cart/resetCart',
+  async (userId) => {
+    const response = await resetCart(userId);
+    // The value we return becomes the `fulfilled` action payload
+    return response.data;
+  }
+);
+
+
 
 export const counterSlice = createSlice({
   name: 'cart',
@@ -82,6 +92,13 @@ export const counterSlice = createSlice({
         state.status = 'idel';
         const index = state.items.findIndex(item => item.id === action.payload.id);
         state.items.splice(index, 1);
+      })
+      .addCase(resetCartAsync.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(resetCartAsync.fulfilled, (state, action) => {
+        state.status = 'idle';
+        state.items = [];
       })
   },
 });
