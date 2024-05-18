@@ -14,9 +14,10 @@ import { fetchItemsByUserIdAsync } from './features/cart/cartSlice';
 import PageNotFound from './pages/404';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import UserOrdersPage from './pages/UserOrderPage';
-import UserProfile from './features/user/components/UserProfile';
 import UserProfilePage from './pages/UserProfilePage';
 import { fetchLoggedInUserAsync } from './features/user/userSlice';
+import Logout from './features/auth/components/Logout';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 import {
   createBrowserRouter,
@@ -68,28 +69,27 @@ const router = createBrowserRouter([
   },
   {
     path: '/order-success/:id',
-    element: (
-      <OrderSuccessPage></OrderSuccessPage>
-    ),
+    element: < OrderSuccessPage ></OrderSuccessPage >
   },
   {
     path: '/orders',
-    element: (
-      <UserOrdersPage></UserOrdersPage>
-      // we will add Page later right now using component directly.
-    ),
+    element: <UserOrdersPage></UserOrdersPage>,
   },
   {
     path: '/profile',
-    element: (
-      <UserProfilePage></UserProfilePage>
-    ),
+    element: <UserProfilePage></UserProfilePage>,
+  },
+  {
+    path: '/logout',
+    element: <Logout></Logout>,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage></ForgotPasswordPage>,
   },
   {
     path: '*',
-    element: (
-      <PageNotFound></PageNotFound>
-    ),
+    element: <PageNotFound></PageNotFound>,
   },
 ]);
 
