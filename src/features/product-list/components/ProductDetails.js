@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { RadioGroup } from '@headlessui/react'
-import { fetchProductsByIdAsync, selectedProductById } from '../productSlice';
+import { fetchProductByIdAsync, selectProductById } from '../productSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { addToCartAsync } from '../../cart/cartSlice';
@@ -42,7 +42,7 @@ export default function ProductDetail () {
   const [selectedSize, setSelectedSize] = useState(sizes[2]);
   const user = useSelector(selectLoggedInUser);
   const dispatch = useDispatch();
-  const product = useSelector(selectedProductById);
+  const product = useSelector(selectProductById);
   const params = useParams();
 
   const handleCart = (e) => {
@@ -53,7 +53,7 @@ export default function ProductDetail () {
   }
 
   useEffect(() => {
-    dispatch(fetchProductsByIdAsync(params.id))
+    dispatch(fetchProductByIdAsync(params.id))
   }, [dispatch, params.id])
 
   return (

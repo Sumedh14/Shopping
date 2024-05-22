@@ -1,5 +1,7 @@
 import React from 'react';
+import { createBrowserRouter, Link, RouterProvider } from 'react-router-dom';
 import './App.css';
+
 import Home from './pages/Home';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -18,8 +20,13 @@ import UserProfilePage from './pages/UserProfilePage';
 import { fetchLoggedInUserAsync } from './features/user/userSlice';
 import Logout from './features/auth/components/Logout';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import AdminHome from './pages/AdminHome';
 
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import AdminProductFormPage from './pages/AdminProductFormPage';
+import ProtectedAdmin from './features/admin/components/ProtectedAdmin';
+import AdminProductDetailPage from './pages/AdminProductDetailPage';
+
+
 
 const router = createBrowserRouter([
   {
@@ -73,6 +80,38 @@ const router = createBrowserRouter([
   {
     path: '/profile',
     element: <UserProfilePage></UserProfilePage>,
+  },
+  {
+    path: '/admin',
+    element: (
+      <ProtectedAdmin>
+        <AdminHome></AdminHome>
+      </ProtectedAdmin>
+    ),
+  },
+  {
+    path: '/admin/product-detail/:id',
+    element: (
+      <ProtectedAdmin>
+        <AdminProductDetailPage></AdminProductDetailPage>
+      </ProtectedAdmin>
+    ),
+  },
+  {
+    path: '/admin/product-form',
+    element: (
+      <ProtectedAdmin>
+        <AdminProductFormPage></AdminProductFormPage>
+      </ProtectedAdmin>
+    ),
+  },
+  {
+    path: '/admin/product-form/edit/:id',
+    element: (
+      <ProtectedAdmin>
+        <AdminProductFormPage></AdminProductFormPage>
+      </ProtectedAdmin>
+    ),
   },
   {
     path: '/logout',
