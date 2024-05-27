@@ -1,349 +1,542 @@
-import { useState, useEffect } from 'react';
-import { StarIcon } from '@heroicons/react/20/solid';
-import { RadioGroup } from '@headlessui/react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchProductByIdAsync, selectProductById } from '../../product-list/productSlice';
-import { useParams } from 'react-router-dom';
-import { addToCartAsync } from '../../cart/cartSlice';
-import { selectLoggedInUser } from '../../auth/authSlice';
+import React, { useState, Fragment, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  fetchBrandsAsync,
+  fetchCategoriesAsync,
+  fetchProductsByFiltersAsync,
+  selectAllProducts,
+  selectBrands,
+  selectCategories,
+  selectTotalItems,
+} from '../../product-list/productSlice';
+import { Dialog, Disclosure, Menu, Transition } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  StarIcon,
+} from '@heroicons/react/20/solid';
+import { Link } from 'react-router-dom';
+import {
+  ChevronDownIcon,
+  FunnelIcon,
+  MinusIcon,
+  PlusIcon,
+  Squares2X2Icon,
+} from '@heroicons/react/20/solid';
+import { ITEMS_PER_PAGE, discountedPrice } from '../../../app/constants';
 
-// TODO: In server data we will add colors, sizes , highlights. to each product
-
-const colors = [
-    { name: 'White', class: 'bg-white', selectedClass: 'ring-gray-400' },
-    { name: 'Gray', class: 'bg-gray-200', selectedClass: 'ring-gray-400' },
-    { name: 'Black', class: 'bg-gray-900', selectedClass: 'ring-gray-900' },
+const sortOptions = [
+  { name: 'Best Rating', sort: 'rating', order: 'desc', current: false },
+  { name: 'Price: Low to High', sort: 'price', order: 'asc', current: false },
+  { name: 'Price: High to Low', sort: 'price', order: 'desc', current: false },
 ];
-const sizes = [
-    { name: 'XXS', inStock: false },
-    { name: 'XS', inStock: true },
-    { name: 'S', inStock: true },
-    { name: 'M', inStock: true },
-    { name: 'L', inStock: true },
-    { name: 'XL', inStock: true },
-    { name: '2XL', inStock: true },
-    { name: '3XL', inStock: true },
-];
 
-const highlights = [
-    'Hand cut and sewn locally',
-    'Dyed with our proprietary colors',
-    'Pre-washed & pre-shrunk',
-    'Ultra-soft 100% cotton',
-];
-
-function classNames (...classes) {
-    return classes.filter(Boolean).join(' ');
+function classNames(...classes) {
+  return classes.filter(Boolean).join(' ');
 }
 
-// TODO : Loading UI
+export default function AdminProductList() {
+  const dispatch = useDispatch();
+  const products = useSelector(selectAllProducts);
+  const brands = useSelector(selectBrands);
+  const categories = useSelector(selectCategories);
+  const totalItems = useSelector(selectTotalItems);
+  const filters = [
+    {
+      id: 'category',
+      name: 'Category',
+      options: categories,
+    },
+    {
+      id: 'brand',
+      name: 'Brands',
+      options: brands,
+    },
+  ];
 
-export default function AdminProductDetail () {
-    const [selectedColor, setSelectedColor] = useState(colors[0]);
-    const [selectedSize, setSelectedSize] = useState(sizes[2]);
-    const user = useSelector(selectLoggedInUser);
-    const product = useSelector(selectProductById);
-    const dispatch = useDispatch();
-    const params = useParams();
+  const [filter, setFilter] = useState({});
+  const [sort, setSort] = useState({});
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const handleFilter = (e, section, option) => {
+    console.log(e.target.checked);
+    const newFilter = { ...filter };
+    // TODO : on server it will support multiple categories
+    if (e.target.checked) {
+      if (newFilter[section.id]) {
+        newFilter[section.id].push(option.value);
+      } else {
+        newFilter[section.id] = [option.value];
+      }
+    } else {
+      const index = newFilter[section.id].findIndex(
+        (el) => el === option.value
+      );
+      newFilter[section.id].splice(index, 1);
+    }
+    console.log({ newFilter });
 
-    const handleCart = (e) => {
-        e.preventDefault();
-        const newItem = { ...product, quantity: 1, user: user.id };
-        delete newItem['id'];
-        dispatch(addToCartAsync(newItem));
-    };
+    setFilter(newFilter);
+  };
 
-    useEffect(() => {
-        dispatch(fetchProductByIdAsync(params.id));
-    }, [dispatch, params.id]);
+  const handleSort = (e, option) => {
+    const sort = { _sort: option.sort, _order: option.order };
+    console.log({ sort });
+    setSort(sort);
+  };
 
-    return (
-        <div className="bg-white">
-            { product && (
-                <div className="pt-6">
-                    <nav aria-label="Breadcrumb">
-                        <ol
-                            className="mx-auto flex max-w-2xl items-center space-x-2 px-4 sm:px-6 lg:max-w-7xl lg:px-8"
-                        >
-                            { product.breadcrumbs &&
-                                product.breadcrumbs.map((breadcrumb) => (
-                                    <li key={ breadcrumb.id }>
-                                        <div className="flex items-center">
-                                            <a
-                                                href={ breadcrumb.href }
-                                                className="mr-2 text-sm font-medium text-gray-900"
-                                            >
-                                                { breadcrumb.name }
-                                            </a>
-                                            <svg
-                                                width={ 16 }
-                                                height={ 20 }
-                                                viewBox="0 0 16 20"
-                                                fill="currentColor"
-                                                aria-hidden="true"
-                                                className="h-5 w-4 text-gray-300"
-                                            >
-                                                <path d="M5.697 4.34L8.98 16.532h1.327L7.025 4.341H5.697z" />
-                                            </svg>
-                                        </div>
-                                    </li>
-                                )) }
-                            <li className="text-sm">
-                                <a
-                                    href={ product.href }
-                                    aria-current="page"
-                                    className="font-medium text-gray-500 hover:text-gray-600"
-                                >
-                                    { product.title }
-                                </a>
-                            </li>
-                        </ol>
-                    </nav>
+  const handlePage = (page) => {
+    console.log({ page });
+    setPage(page);
+  };
 
-                    {/* Image gallery */ }
-                    <div className="mx-auto mt-6 max-w-2xl sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-3 lg:gap-x-8 lg:px-8">
-                        <div className="aspect-h-4 aspect-w-3 hidden overflow-hidden rounded-lg lg:block">
-                            <img
-                                src={ product.images[0] }
-                                alt={ product.title }
-                                className="h-full w-full object-cover object-center"
-                            />
-                        </div>
-                        <div className="hidden lg:grid lg:grid-cols-1 lg:gap-y-8">
-                            <div className="aspect-h-2 aspect-w-3 overflow-hidden rounded-lg">
-                                <img
-                                    src={ product.images[1] }
-                                    alt={ product.title }
-                                    className="h-full w-full object-cover object-center"
-                                />
-                            </div>
-                            <div className="aspect-h-2 aspect-w-3 overflow-hidden rounded-lg">
-                                <img
-                                    src={ product.images[2] }
-                                    alt={ product.title }
-                                    className="h-full w-full object-cover object-center"
-                                />
-                            </div>
-                        </div>
-                        <div className="aspect-h-5 aspect-w-4 lg:aspect-h-4 lg:aspect-w-3 sm:overflow-hidden sm:rounded-lg">
-                            <img
-                                src={ product.images[3] }
-                                alt={ product.title }
-                                className="h-full w-full object-cover object-center"
-                            />
-                        </div>
-                    </div>
+  useEffect(() => {
+    const pagination = { _page: page, _limit: ITEMS_PER_PAGE };
+    dispatch(fetchProductsByFiltersAsync({ filter, sort, pagination }));
+  }, [dispatch, filter, sort, page]);
 
-                    {/* Product info */ }
-                    <div className="mx-auto max-w-2xl px-4 pb-16 pt-10 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-3 lg:grid-rows-[auto,auto,1fr] lg:gap-x-8 lg:px-8 lg:pb-24 lg:pt-16">
-                        <div className="lg:col-span-2 lg:border-r lg:border-gray-200 lg:pr-8">
-                            <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-                                { product.title }
-                            </h1>
-                        </div>
+  useEffect(() => {
+    setPage(1);
+  }, [totalItems, sort]);
 
-                        {/* Options */ }
-                        <div className="mt-4 lg:row-span-3 lg:mt-0">
-                            <h2 className="sr-only">Product information</h2>
-                            <p className="text-3xl tracking-tight text-gray-900">
-                                ${ product.price }
-                            </p>
+  useEffect(() => {
+    dispatch(fetchBrandsAsync());
+    dispatch(fetchCategoriesAsync());
+  }, []);
 
-                            {/* Reviews */ }
-                            <div className="mt-6">
-                                <h3 className="sr-only">Reviews</h3>
-                                <div className="flex items-center">
-                                    <div className="flex items-center">
-                                        { [0, 1, 2, 3, 4].map((rating) => (
-                                            <StarIcon
-                                                key={ rating }
-                                                className={ classNames(
-                                                    product.rating > rating
-                                                        ? 'text-gray-900'
-                                                        : 'text-gray-200',
-                                                    'h-5 w-5 flex-shrink-0'
-                                                ) }
-                                                aria-hidden="true"
-                                            />
-                                        )) }
-                                    </div>
-                                    <p className="sr-only">{ product.rating } out of 5 stars</p>
-                                </div>
-                            </div>
+  return (
+    <div className="bg-white">
+      <div>
+        <MobileFilter
+          handleFilter={handleFilter}
+          mobileFiltersOpen={mobileFiltersOpen}
+          setMobileFiltersOpen={setMobileFiltersOpen}
+          filters={filters}
+        ></MobileFilter>
 
-                            <form className="mt-10">
-                                {/* Colors */ }
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-900">Color</h3>
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 pt-24">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+              All Products
+            </h1>
 
-                                    <RadioGroup
-                                        value={ selectedColor }
-                                        onChange={ setSelectedColor }
-                                        className="mt-4"
-                                    >
-                                        <RadioGroup.Label className="sr-only">
-                                            Choose a color
-                                        </RadioGroup.Label>
-                                        <div className="flex items-center space-x-3">
-                                            { colors.map((color) => (
-                                                <RadioGroup.Option
-                                                    key={ color.name }
-                                                    value={ color }
-                                                    className={ ({ active, checked }) =>
-                                                        classNames(
-                                                            color.selectedClass,
-                                                            active && checked ? 'ring ring-offset-1' : '',
-                                                            !active && checked ? 'ring-2' : '',
-                                                            'relative -m-0.5 flex cursor-pointer items-center justify-center rounded-full p-0.5 focus:outline-none'
-                                                        )
-                                                    }
-                                                >
-                                                    <RadioGroup.Label as="span" className="sr-only">
-                                                        { color.name }
-                                                    </RadioGroup.Label>
-                                                    <span
-                                                        aria-hidden="true"
-                                                        className={ classNames(
-                                                            color.class,
-                                                            'h-8 w-8 rounded-full border border-black border-opacity-10'
-                                                        ) }
-                                                    />
-                                                </RadioGroup.Option>
-                                            )) }
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-
-                                {/* Sizes */ }
-                                <div className="mt-10">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-medium text-gray-900">Size</h3>
-                                        <a
-                                            href="#"
-                                            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                                        >
-                                            Size guide
-                                        </a>
-                                    </div>
-
-                                    <RadioGroup
-                                        value={ selectedSize }
-                                        onChange={ setSelectedSize }
-                                        className="mt-4"
-                                    >
-                                        <RadioGroup.Label className="sr-only">
-                                            Choose a size
-                                        </RadioGroup.Label>
-                                        <div className="grid grid-cols-4 gap-4 sm:grid-cols-8 lg:grid-cols-4">
-                                            { sizes.map((size) => (
-                                                <RadioGroup.Option
-                                                    key={ size.name }
-                                                    value={ size }
-                                                    disabled={ !size.inStock }
-                                                    className={ ({ active }) =>
-                                                        classNames(
-                                                            size.inStock
-                                                                ? 'cursor-pointer bg-white text-gray-900 shadow-sm'
-                                                                : 'cursor-not-allowed bg-gray-50 text-gray-200',
-                                                            active ? 'ring-2 ring-indigo-500' : '',
-                                                            'group relative flex items-center justify-center rounded-md border py-3 px-4 text-sm font-medium uppercase hover:bg-gray-50 focus:outline-none sm:flex-1 sm:py-6'
-                                                        )
-                                                    }
-                                                >
-                                                    { ({ active, checked }) => (
-                                                        <>
-                                                            <RadioGroup.Label as="span">
-                                                                { size.name }
-                                                            </RadioGroup.Label>
-                                                            { size.inStock ? (
-                                                                <span
-                                                                    className={ classNames(
-                                                                        active ? 'border' : 'border-2',
-                                                                        checked
-                                                                            ? 'border-indigo-500'
-                                                                            : 'border-transparent',
-                                                                        'pointer-events-none absolute -inset-px rounded-md'
-                                                                    ) }
-                                                                    aria-hidden="true"
-                                                                />
-                                                            ) : (
-                                                                <span
-                                                                    aria-hidden="true"
-                                                                    className="pointer-events-none absolute -inset-px rounded-md border-2 border-gray-200"
-                                                                >
-                                                                    <svg
-                                                                        className="absolute inset-0 h-full w-full stroke-2 text-gray-200"
-                                                                        viewBox="0 0 100 100"
-                                                                        preserveAspectRatio="none"
-                                                                        stroke="currentColor"
-                                                                    >
-                                                                        <line
-                                                                            x1={ 0 }
-                                                                            y1={ 100 }
-                                                                            x2={ 100 }
-                                                                            y2={ 0 }
-                                                                            vectorEffect="non-scaling-stroke"
-                                                                        />
-                                                                    </svg>
-                                                                </span>
-                                                            ) }
-                                                        </>
-                                                    ) }
-                                                </RadioGroup.Option>
-                                            )) }
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-
-                                <button
-                                    onClick={ handleCart }
-                                    type="submit"
-                                    className="mt-10 flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                >
-                                    Add to Cart
-                                </button>
-                            </form>
-                        </div>
-
-                        <div className="py-10 lg:col-span-2 lg:col-start-1 lg:border-r lg:border-gray-200 lg:pb-16 lg:pr-8 lg:pt-6">
-                            {/* Description and details */ }
-                            <div>
-                                <h3 className="sr-only">Description</h3>
-
-                                <div className="space-y-6">
-                                    <p className="text-base text-gray-900">
-                                        { product.description }
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="mt-10">
-                                <h3 className="text-sm font-medium text-gray-900">
-                                    Highlights
-                                </h3>
-
-                                <div className="mt-4">
-                                    <ul role="list" className="list-disc space-y-2 pl-4 text-sm">
-                                        { highlights.map((highlight) => (
-                                            <li key={ highlight } className="text-gray-400">
-                                                <span className="text-gray-600">{ highlight }</span>
-                                            </li>
-                                        )) }
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div className="mt-10">
-                                <h2 className="text-sm font-medium text-gray-900">Details</h2>
-
-                                <div className="mt-4 space-y-6">
-                                    <p className="text-sm text-gray-600">{ product.description }</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div className="flex items-center">
+              <Menu as="div" className="relative inline-block text-left">
+                <div>
+                  <Menu.Button className="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
+                    Sort
+                    <ChevronDownIcon
+                      className="-mr-1 ml-1 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+                      aria-hidden="true"
+                    />
+                  </Menu.Button>
                 </div>
-            ) }
+
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <div className="py-1">
+                      {sortOptions.map((option) => (
+                        <Menu.Item key={option.name}>
+                          {({ active }) => (
+                            <p
+                              onClick={(e) => handleSort(e, option)}
+                              className={classNames(
+                                option.current
+                                  ? 'font-medium text-gray-900'
+                                  : 'text-gray-500',
+                                active ? 'bg-gray-100' : '',
+                                'block px-4 py-2 text-sm'
+                              )}
+                            >
+                              {option.name}
+                            </p>
+                          )}
+                        </Menu.Item>
+                      ))}
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
+
+              <button
+                type="button"
+                className="-m-2 ml-5 p-2 text-gray-400 hover:text-gray-500 sm:ml-7"
+              >
+                <span className="sr-only">View grid</span>
+                <Squares2X2Icon className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="-m-2 ml-4 p-2 text-gray-400 hover:text-gray-500 sm:ml-6 lg:hidden"
+                onClick={() => setMobileFiltersOpen(true)}
+              >
+                <span className="sr-only">Filters</span>
+                <FunnelIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <section aria-labelledby="products-heading" className="pb-24 pt-6">
+            <h2 id="products-heading" className="sr-only">
+              Products
+            </h2>
+
+            <div className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-4">
+              <DesktopFilter
+                handleFilter={handleFilter}
+                filters={filters}
+              ></DesktopFilter>
+              {/* Product grid */}
+
+              <div className="lg:col-span-3">
+                <div>
+                  <Link
+                    to="/admin/product-form"
+                    className="rounded-md mx-10 my-5 bg-green-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  >
+                    Add New Product
+                  </Link>
+                </div>
+                <ProductGrid products={products}></ProductGrid>
+              </div>
+              {/* Product grid end */}
+            </div>
+          </section>
+
+          {/* section of product and filters ends */}
+          <Pagination
+            page={page}
+            setPage={setPage}
+            handlePage={handlePage}
+            totalItems={totalItems}
+          ></Pagination>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function MobileFilter({
+  mobileFiltersOpen,
+  setMobileFiltersOpen,
+  handleFilter,
+  filters,
+}) {
+  return (
+    <Transition.Root show={mobileFiltersOpen} as={Fragment}>
+      <Dialog
+        as="div"
+        className="relative z-40 lg:hidden"
+        onClose={setMobileFiltersOpen}
+      >
+        <Transition.Child
+          as={Fragment}
+          enter="transition-opacity ease-linear duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity ease-linear duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black bg-opacity-25" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-40 flex">
+          <Transition.Child
+            as={Fragment}
+            enter="transition ease-in-out duration-300 transform"
+            enterFrom="translate-x-full"
+            enterTo="translate-x-0"
+            leave="transition ease-in-out duration-300 transform"
+            leaveFrom="translate-x-0"
+            leaveTo="translate-x-full"
+          >
+            <Dialog.Panel className="relative ml-auto flex h-full w-full max-w-xs flex-col overflow-y-auto bg-white py-4 pb-12 shadow-xl">
+              <div className="flex items-center justify-between px-4">
+                <h2 className="text-lg font-medium text-gray-900">Filters</h2>
+                <button
+                  type="button"
+                  className="-mr-2 flex h-10 w-10 items-center justify-center rounded-md bg-white p-2 text-gray-400"
+                  onClick={() => setMobileFiltersOpen(false)}
+                >
+                  <span className="sr-only">Close menu</span>
+                  <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* Filters */}
+              <form className="mt-4 border-t border-gray-200">
+                {filters.map((section) => (
+                  <Disclosure
+                    as="div"
+                    key={section.id}
+                    className="border-t border-gray-200 px-4 py-6"
+                  >
+                    {({ open }) => (
+                      <>
+                        <h3 className="-mx-2 -my-3 flow-root">
+                          <Disclosure.Button className="flex w-full items-center justify-between bg-white px-2 py-3 text-gray-400 hover:text-gray-500">
+                            <span className="font-medium text-gray-900">
+                              {section.name}
+                            </span>
+                            <span className="ml-6 flex items-center">
+                              {open ? (
+                                <MinusIcon
+                                  className="h-5 w-5"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <PlusIcon
+                                  className="h-5 w-5"
+                                  aria-hidden="true"
+                                />
+                              )}
+                            </span>
+                          </Disclosure.Button>
+                        </h3>
+                        <Disclosure.Panel className="pt-6">
+                          <div className="space-y-6">
+                            {section.options.map((option, optionIdx) => (
+                              <div
+                                key={option.value}
+                                className="flex items-center"
+                              >
+                                <input
+                                  id={`filter-mobile-${section.id}-${optionIdx}`}
+                                  name={`${section.id}[]`}
+                                  defaultValue={option.value}
+                                  type="checkbox"
+                                  defaultChecked={option.checked}
+                                  onChange={(e) =>
+                                    handleFilter(e, section, option)
+                                  }
+                                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <label
+                                  htmlFor={`filter-mobile-${section.id}-${optionIdx}`}
+                                  className="ml-3 min-w-0 flex-1 text-gray-500"
+                                >
+                                  {option.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </Disclosure.Panel>
+                      </>
+                    )}
+                  </Disclosure>
+                ))}
+              </form>
+            </Dialog.Panel>
+          </Transition.Child>
         </div>
-    );
+      </Dialog>
+    </Transition.Root>
+  );
+}
+
+function DesktopFilter({ handleFilter, filters }) {
+  return (
+    <form className="hidden lg:block">
+      {filters.map((section) => (
+        <Disclosure
+          as="div"
+          key={section.id}
+          className="border-b border-gray-200 py-6"
+        >
+          {({ open }) => (
+            <>
+              <h3 className="-my-3 flow-root">
+                <Disclosure.Button className="flex w-full items-center justify-between bg-white py-3 text-sm text-gray-400 hover:text-gray-500">
+                  <span className="font-medium text-gray-900">
+                    {section.name}
+                  </span>
+                  <span className="ml-6 flex items-center">
+                    {open ? (
+                      <MinusIcon className="h-5 w-5" aria-hidden="true" />
+                    ) : (
+                      <PlusIcon className="h-5 w-5" aria-hidden="true" />
+                    )}
+                  </span>
+                </Disclosure.Button>
+              </h3>
+              <Disclosure.Panel className="pt-6">
+                <div className="space-y-4">
+                  {section.options.map((option, optionIdx) => (
+                    <div key={option.value} className="flex items-center">
+                      <input
+                        id={`filter-${section.id}-${optionIdx}`}
+                        name={`${section.id}[]`}
+                        defaultValue={option.value}
+                        type="checkbox"
+                        defaultChecked={option.checked}
+                        onChange={(e) => handleFilter(e, section, option)}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label
+                        htmlFor={`filter-${section.id}-${optionIdx}`}
+                        className="ml-3 text-sm text-gray-600"
+                      >
+                        {option.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+      ))}
+    </form>
+  );
+}
+
+function Pagination({ page, setPage, handlePage, totalItems }) {
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  return (
+    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <div
+          onClick={(e) => handlePage(page > 1 ? page - 1 : page)}
+          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Previous
+        </div>
+        <div
+          onClick={(e) => handlePage(page < totalPages ? page + 1 : page)}
+          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Next
+        </div>
+      </div>
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing{' '}
+            <span className="font-medium">
+              {(page - 1) * ITEMS_PER_PAGE + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-medium">
+              {page * ITEMS_PER_PAGE > totalItems
+                ? totalItems
+                : page * ITEMS_PER_PAGE}
+            </span>{' '}
+            of <span className="font-medium">{totalItems}</span> results
+          </p>
+        </div>
+        <div>
+          <nav
+            className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+            aria-label="Pagination"
+          >
+            <div
+              onClick={(e) => handlePage(page > 1 ? page - 1 : page)}
+              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+            >
+              <span className="sr-only">Previous</span>
+              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+            </div>
+            {/* Current: "z-10 bg-indigo-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600", Default: "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0" */}
+
+            {Array.from({ length: totalPages }).map((el, index) => (
+              <div
+                onClick={(e) => handlePage(index + 1)}
+                aria-current="page"
+                className={`relative cursor-pointer z-10 inline-flex items-center ${
+                  index + 1 === page
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-400'
+                } px-4 py-2 text-sm font-semibold  focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600`}
+              >
+                {index + 1}
+              </div>
+            ))}
+
+            <div
+              onClick={(e) => handlePage(page < totalPages ? page + 1 : page)}
+              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+            >
+              <span className="sr-only">Next</span>
+              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+            </div>
+          </nav>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductGrid({ products }) {
+  return (
+    <div className="bg-white">
+      <div className="mx-auto max-w-2xl px-4 py-0 sm:px-6 sm:py-0 lg:max-w-7xl lg:px-8">
+        <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+          {products.map((product) => (
+            <div>
+              <Link to={`/product-detail/${product.id}`} key={product.id}>
+                <div className="group relative border-solid border-2 p-2 border-gray-200">
+                  <div className="min-h-60 aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-60">
+                    <img
+                      src={product.thumbnail}
+                      alt={product.title}
+                      className="h-full w-full object-cover object-center lg:h-full lg:w-full"
+                    />
+                  </div>
+                  <div className="mt-4 flex justify-between">
+                    <div>
+                      <h3 className="text-sm text-gray-700">
+                        <div href={product.thumbnail}>
+                          <span
+                            aria-hidden="true"
+                            className="absolute inset-0"
+                          />
+                          {product.title}
+                        </div>
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        <StarIcon className="w-6 h-6 inline"></StarIcon>
+                        <span className=" align-bottom">{product.rating}</span>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm block font-medium text-gray-900">
+                        $
+                        {discountedPrice(product)}
+                      </p>
+                      <p className="text-sm block line-through font-medium text-gray-400">
+                        ${product.price}
+                      </p>
+                    </div>
+                  </div>
+                  {product.deleted && (
+                    <div>
+                      <p className="text-sm text-red-400">product deleted</p>
+                    </div>
+                  )}
+                </div>
+              </Link>
+              <div className="mt-5">
+                <Link
+                  to={`/admin/product-form/edit/${product.id}`}
+                  className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >
+                  Edit Product
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
