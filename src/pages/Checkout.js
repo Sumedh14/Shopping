@@ -8,9 +8,7 @@ import {
 
 import { Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import {
-  updateUserAsync,
-} from '../features/auth/authSlice';
+import { updateUserAsync } from '../features/user/userSlice';
 
 import { useState } from 'react';
 import { createOrderAsync, selectCurrentOrder } from '../features/order/orderSlice';
