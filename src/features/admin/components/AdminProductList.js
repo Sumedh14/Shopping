@@ -62,7 +62,6 @@ export default function AdminProductList () {
     const handleFilter = (e, section, option) => {
         console.log(e.target.checked);
         const newFilter = { ...filter };
-        // TODO : on server it will support multiple categories
         if (e.target.checked) {
             if (newFilter[section.id]) {
                 newFilter[section.id].push(option.value);
@@ -93,7 +92,7 @@ export default function AdminProductList () {
 
     useEffect(() => {
         const pagination = { _page: page, _limit: ITEMS_PER_PAGE };
-        dispatch(fetchProductsByFiltersAsync({ filter, sort, pagination }));
+        dispatch(fetchProductsByFiltersAsync({ filter, sort, pagination, admin: true }));
     }, [dispatch, filter, sort, page]);
 
     useEffect(() => {
