@@ -2,26 +2,24 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
     fetchLoggedInUserOrderAsync,
-    selectUserInfo,
+    selectUserInfoStatus,
     selectUserOrders
 } from '../userSlice';
 import { discountedPrice } from '../../../app/constants';
+import { Grid } from 'react-loader-spinner';
 
 export default function UserOrders () {
     const dispatch = useDispatch();
-    const userInfo = useSelector(selectUserInfo);
-    console.log('selectUserInfoID', userInfo.id)
     const orders = useSelector(selectUserOrders)
-    console.log('selectUserOrdersorder', orders)
+    const status = useSelector(selectUserInfoStatus);
 
     useEffect(() => {
-        console.log('fetchLoggedInUserOrderAsyncID', userInfo.id)
-        dispatch(fetchLoggedInUserOrderAsync(userInfo.id));
+        dispatch(fetchLoggedInUserOrderAsync());
     }, [dispatch, userInfo]);
 
     return (
         <div>
-            { orders.map((order) => (
+            { orders && orders.map((order) => (
                 <div key={ order.id }>
                     <div>
                         <div className="mx-auto mt-12 bg-white max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -115,6 +113,18 @@ export default function UserOrders () {
                     </div>
                 </div>
             )) }
+            { status === 'loading' ? (
+                <Grid
+                    height="80"
+                    width="80"
+                    color="rgb(79, 70, 229) "
+                    ariaLabel="grid-loading"
+                    radius="12.5"
+                    wrapperStyle={ {} }
+                    wrapperClass=""
+                    visible={ true }
+                />
+            ) : null }
         </div>
     );
 }

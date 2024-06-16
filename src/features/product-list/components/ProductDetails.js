@@ -5,7 +5,6 @@ import { fetchProductByIdAsync, selectProductById, selectProductListStatus } fro
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { addToCartAsync, selectItems } from '../../cart/cartSlice';
-import { selectLoggedInUser } from '../../auth/authSlice';
 import { discountedPrice } from '../../../app/constants';
 import { useAlert } from 'react-alert';
 import { Grid } from 'react-loader-spinner';
@@ -44,7 +43,6 @@ export default function ProductDetail () {
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [selectedSize, setSelectedSize] = useState(sizes[2]);
   const items = useSelector(selectItems);
-  const user = useSelector(selectLoggedInUser);
   const dispatch = useDispatch();
   const product = useSelector(selectProductById);
   const params = useParams();
@@ -57,8 +55,7 @@ export default function ProductDetail () {
       console.log({ items, product });
       const newItem = {
         product: product.id,
-        quantity: 1,
-        user: user.id,
+        quantity: 1
       };
       dispatch(addToCartAsync(newItem));
       // TODO: it will be based on server response of backend
