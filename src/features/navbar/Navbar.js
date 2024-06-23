@@ -10,7 +10,7 @@ import { selectItems } from '../cart/cartSlice';
 
 import { Link } from 'react-router-dom';
 
-import { selectLoggedInUser } from '../auth/authSlice';
+import { selectloggedInUser } from '../auth/authSlice';
 import { selectUserInfo } from '../user/userSlice';
 
 const navigation = [
@@ -31,7 +31,7 @@ function classNames (...classes) {
 
 function NavBar ({ children }) {
   const items = useSelector(selectItems);
-  const user = useSelector(selectLoggedInUser);
+  const user = useSelector(selectloggedInUser);
   const userInfo = useSelector(selectUserInfo);
 
   return (
